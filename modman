@@ -3,3 +3,4 @@ app/code/local/Aoe/AsyncCache/									app/code/local/Aoe/AsyncCache/
 app/code/local/Varien/Cache/Core.php							app/code/local/Varien/Cache/Core.php
 app/design/adminhtml/default/default/layout/aoeasynccache/		app/design/adminhtml/default/default/layout/aoeasynccache/
 app/design/adminhtml/default/default/template/aoeasynccache/	app/design/adminhtml/default/default/template/aoeasynccache/
+shell/*   		shell/
