@@ -76,7 +76,7 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
 
                         if ($this->_enterprisePageCacheEnabled()) {
                             $fpcStartTime = time();
-                            Enterprise_PageCache_Model_Cache::getCacheInstance()->clean($job->getMode(), $job->getTags(), true);
+                            Enterprise_PageCache_Model_Cache::getCacheInstance()->getFrontend()->clean($job->getMode(), $job->getTags(), true);
                             $fpcTime = time() - $fpcStartTime;
                             $time += $fpcTime;
                             $summary[] = sprintf('[ASYNCCACHE::FPC] MODE: %s, DURATION: %s sec, TAGS: %s',
