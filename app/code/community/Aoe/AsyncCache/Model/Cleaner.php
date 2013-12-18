@@ -35,7 +35,7 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
     protected function _enterprisePageCacheEnabled()
     {
         if (is_null($this->_enterprisePageCacheEnabledFlag)) {
-            $this->_enterprisePageCacheEnabledFlag = is_object(Mage::getConfig()->getNode('modules/Enterprise_Pbridge')) && class_exists(Enterprise_PageCache_Model_Cache);
+            $this->_enterprisePageCacheEnabledFlag = is_object(Mage::getConfig()->getNode('modules/Enterprise_Pbridge')) && class_exists('Enterprise_PageCache_Model_Cache');
         }
 
         return $this->_enterprisePageCacheEnabledFlag;
