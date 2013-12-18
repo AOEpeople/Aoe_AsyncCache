@@ -21,6 +21,27 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
     );
 
     /**
+     * Enterprise_PageCache flag
+     *
+     * @var null|boolean
+     */
+    protected $_enterprisePageCacheEnabledFlag = null;
+
+    /**
+     * determine wether Enterprise_PageCache is available or not
+     *
+     * @return boolean
+     */
+    protected function _enterprisePageCacheEnabled()
+    {
+        if (is_null($this->_enterprisePageCacheEnabledFlag)) {
+            $this->_enterprisePageCacheEnabledFlag = is_object(Mage::getConfig()->getNode('modules/Enterprise_Pbridge')) && class_exists(Enterprise_PageCache_Model_Cache);
+        }
+
+        return $this->_enterprisePageCacheEnabledFlag;
+    }
+
+    /**
      * Process the queue
      *
      * @return array|null
@@ -46,14 +67,27 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
                     if (in_array($mode, $this->_supportedJobModes)) {
                         $startTime = time();
                         Mage::app()->getCache()->clean($job->getMode(), $job->getTags(), true);
-                        $job->setDuration(time() - $startTime);
-                        $job->setIsProcessed(true);
-
-                        Mage::log(sprintf('[ASYNCCACHE] MODE: %s, DURATION: %s sec, TAGS: %s',
+                        $time = time() - $startTime;
+                        $summary[] = sprintf('[ASYNCCACHE] MODE: %s, DURATION: %s sec, TAGS: %s',
                             $job->getMode(),
-                            $job->getDuration(),
+                            $time,
                             implode(', ', $job->getTags())
-                        ));
+                        );
+
+                        if ($this->_enterprisePageCacheEnabled()) {
+                            $fpcStartTime = time();
+                            Enterprise_PageCache_Model_Cache::getCacheInstance()->clean($job->getMode(), $job->getTags(), true);
+                            $fpcTime = time() - $fpcStartTime;
+                            $time += $fpcTime;
+                            $summary[] = sprintf('[ASYNCCACHE::FPC] MODE: %s, DURATION: %s sec, TAGS: %s',
+                                $job->getMode(),
+                                $fpcTime,
+                                implode(', ', $job->getTags())
+                            );
+                        }
+
+                        $job->setDuration($time);
+                        $job->setIsProcessed(true);
                     }
                 }
             }
@@ -80,7 +114,8 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
                 $asynccache->delete();
             }
 
-            $summary = $jobCollection->getSummary();
+            //$summary = $jobCollection->getSummary();
+            Mage::log($summary);
         }
 
         // disabling asynccache (clear cache requests will be processed right away)
