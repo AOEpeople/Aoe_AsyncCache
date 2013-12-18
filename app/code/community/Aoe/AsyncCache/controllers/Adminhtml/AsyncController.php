@@ -18,7 +18,7 @@ class Aoe_AsyncCache_Adminhtml_AsyncController extends Mage_Adminhtml_Controller
         if (is_array($processedJobs)) {
             foreach ($processedJobs as $job) {
                 if (count($job['tags'])) {
-                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], implode(', ', $job['tags']), $job['duration']));
+                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], @implode(', ', $job['tags']), $job['duration']));
                 } else {
                     $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
                 }
@@ -44,7 +44,7 @@ class Aoe_AsyncCache_Adminhtml_AsyncController extends Mage_Adminhtml_Controller
             foreach ($processedJobs as $job) {
                 if (count($job['tags'])) {
                     $this->_getSession()
-                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], implode(', ', $job['tags']), $job['duration']));
+                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], @implode(', ', $job['tags']), $job['duration']));
                 } else {
                     $this->_getSession()
                         ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
