@@ -115,7 +115,6 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
             }
 
             //$summary = $jobCollection->getSummary();
-            Mage::log($summary);
         }
 
         // disabling asynccache (clear cache requests will be processed right away)

@@ -14,14 +14,10 @@ class Aoe_AsyncCache_Adminhtml_AsyncController extends Mage_Adminhtml_Controller
      */
     public function processAction()
     {
-        $processedJobs = Mage::getModel('aoeasynccache/cleaner')->processQueue();
-        if (is_array($processedJobs)) {
-            foreach ($processedJobs as $job) {
-                if (count($job['tags'])) {
-                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], @implode(', ', $job['tags']), $job['duration']));
-                } else {
-                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
-                }
+        $summary = Mage::getModel('aoeasynccache/cleaner')->processQueue();
+        if (is_array($summary)) {
+            foreach ($summary as $processedEntry) {
+                $this->_getSession()->addSuccess($processedEntry);
             }
         }
         $this->_redirect('*/cache/index');
@@ -39,17 +35,11 @@ class Aoe_AsyncCache_Adminhtml_AsyncController extends Mage_Adminhtml_Controller
         Mage::app()->getCacheInstance()->flush();
         $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__("The cache storage has been flushed."));
 
-        $processedJobs = Mage::getModel('aoeasynccache/cleaner')->processQueue();
-        if (is_array($processedJobs)) {
-            foreach ($processedJobs as $job) {
-                if (count($job['tags'])) {
-                    $this->_getSession()
-                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], @implode(', ', $job['tags']), $job['duration']));
-                } else {
-                    $this->_getSession()
-                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
+        $summary = Mage::getModel('aoeasynccache/cleaner')->processQueue();
+        if (is_array($summary)) {
+            foreach ($summary as $processedEntry) {
+                    $this->_getSession()->addSuccess($processedEntry);
                 }
-            }
         }
         $this->_redirect('*/cache/index');
     }
