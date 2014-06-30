@@ -1,0 +1,16 @@
+{
+    "name":"aoepeople/aoe_asynccache",
+    "type":"magento-module",
+    "license":"GPLv3",
+    "homepage":"https://github.com/AOEpeople/Aoe_AsyncCache",
+    "description":"Asynchronous Cache for Magento",
+    "authors":[
+        {
+            "name":"Fabrizio Branca",
+            "email":"fabrizio.branca@aoe.com"
+        }
+    ],
+    "require":{
+        "magento-hackathon/magento-composer-installer":"*"
+    }
+}
