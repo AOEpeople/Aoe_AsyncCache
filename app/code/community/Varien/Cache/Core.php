@@ -127,20 +127,11 @@ class Varien_Cache_Core extends Zend_Cache_Core
         }
 
         if (!$doIt && !Mage::registry('disableasynccache')) {
-            /** @var $asyncCache Aoe_AsyncCache_Model_Asynccache */
-            $asyncCache = Mage::getModel('aoeasynccache/asynccache');
-            if ($asyncCache !== false) {
-                $asyncCache->setTstamp(time())
-                    ->setMode($mode)
-                    ->setTags(is_array($tags) ? implode(',', $tags) : $tags)
-                    ->setStatus(Aoe_AsyncCache_Model_Asynccache::STATUS_PENDING);
-
-                try {
-                    $asyncCache->save();
-                    return true;
-                } catch (Exception $e) {
-                    // Table might not be created yet. Just go on without returning...
-                }
+            try {
+                Mage::helper('aoeasynccache')->addJob($mode, $tags);
+                return true;
+            } catch (Exception $e) {
+                // Table might not be created yet. Just go on without returning...
             }
         }
 

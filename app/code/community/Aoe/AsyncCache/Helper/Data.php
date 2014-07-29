@@ -32,4 +32,22 @@ class Aoe_AsyncCache_Helper_Data extends Mage_Core_Helper_Abstract
 
         return implode(' // ', $path);
     }
+
+    /**
+     * Add new job to the asynccache table
+     *
+     * @param string $mode
+     * @param array|string $tags
+     * @throws Exception
+     */
+    public function addJob($mode, $tags)
+    {
+        /** @var $asyncCache Aoe_AsyncCache_Model_Asynccache */
+        $asyncCache = Mage::getModel('aoeasynccache/asynccache');
+        $asyncCache->setTstamp(time())
+            ->setMode($mode)
+            ->setTags($tags)
+            ->setStatus(Aoe_AsyncCache_Model_Asynccache::STATUS_PENDING)
+            ->save();
+    }
 }
