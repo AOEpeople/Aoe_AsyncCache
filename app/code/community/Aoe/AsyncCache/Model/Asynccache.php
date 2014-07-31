@@ -11,17 +11,13 @@
  * @method Aoe_AsyncCache_Model_Asynccache setTstamp(int $timeStamp)
  * @method string getMode()
  * @method Aoe_AsyncCache_Model_Asynccache setMode(string $mode)
- * @method string getTags()
- * @method string getTrace()
- * @method Aoe_AsyncCache_Model_Asynccache setTrace(string $trace)
- * @method string getStatus()
- * @method Aoe_AsyncCache_Model_Asynccache setStatus(string $status)
- * @method string getProcessed()
- * @method Aoe_AsyncCache_Model_Asynccache setProcessed(string $message)
  */
 class Aoe_AsyncCache_Model_Asynccache extends Mage_Core_Model_Abstract
 {
-    const STATUS_PENDING = 'pending';
+    /**
+     * Tags delimiter for implode/explode
+     */
+    const TAG_DELIMITER = ',';
 
     /**
      * Constructor
@@ -32,6 +28,25 @@ class Aoe_AsyncCache_Model_Asynccache extends Mage_Core_Model_Abstract
     }
 
     /**
+     * Filter tags - remove empty and duplicate tags and then sort them
+     *
+     * @param array $unfilteredTags
+     * @return array
+     */
+    protected function _prepareTagArray(array $unfilteredTags)
+    {
+        $tags = array();
+        foreach ($unfilteredTags as $tag) {
+            $tag = trim($tag);
+            if (!empty($tag) && !in_array($tag, $tags)) {
+                $tags[] = $tag;
+            }
+        }
+        sort($tags);
+        return $tags;
+    }
+
+    /**
      * Set tags
      *
      * @param array|string $tags
@@ -39,8 +54,23 @@ class Aoe_AsyncCache_Model_Asynccache extends Mage_Core_Model_Abstract
      */
     public function setTags($tags)
     {
-        $this->setData('tags', is_array($tags) ? implode(',', $tags) : $tags);
+        if (is_array($tags)) {
+            $tagString = implode(self::TAG_DELIMITER, $this->_prepareTagArray($tags));
+        } else {
+            $tagString = $tags;
+        }
+        $this->setData('tags', $tagString);
 
         return $this;
+    }
+
+    /**
+     * Get tags
+     *
+     * @return array
+     */
+    public function getTags()
+    {
+        return explode(self::TAG_DELIMITER, $this->getData('tags'));
     }
 }

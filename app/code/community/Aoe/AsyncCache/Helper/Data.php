@@ -8,46 +8,63 @@
 class Aoe_AsyncCache_Helper_Data extends Mage_Core_Helper_Abstract
 {
     /**
-     * Prints the trail (for debugging purposes)
-     * Taken from TYPO3 :)
-     *
-     * @return string
+     * Select limit config option xpath
      */
-    public function debugTrail()
-    {
-        $trail = debug_backtrace();
-        $trail = array_reverse($trail);
-        array_pop($trail);
+    const XML_PATH_SELECT_LIMIT = 'system/aoeasynccache/select_limit';
 
-        $path = array();
-        foreach ($trail as $dat) {
-            $tmp = '';
-            $tmp .= isset($dat['class']) ? $dat['class'] : '';
-            $tmp .= isset($dat['type']) ? $dat['type'] : '';
-            $tmp .= isset($dat['function']) ? $dat['function'] : '';
-            $tmp .= '#';
-            $tmp .= isset($dat['line']) ? $dat['line'] : '';
-            $path[] = $tmp;
+    /**
+     * Select limit config option value
+     *
+     * @var int
+     */
+    protected $_selectLimit = null;
+
+    /**
+     * Get select limit (config option) value
+     *
+     * @return int
+     */
+    public function getSelectLimit()
+    {
+        if ($this->_selectLimit === null) {
+            $this->_selectLimit = (int)Mage::getStoreConfig('system/aoeasynccache/select_limit');
         }
 
-        return implode(' // ', $path);
+        return $this->_selectLimit;
     }
 
     /**
-     * Add new job to the asynccache table
+     * Add new job to the aoe_asynccache table
      *
      * @param string $mode
      * @param array|string $tags
      * @throws Exception
      */
-    public function addJob($mode, $tags)
+    protected function _addJob($mode, $tags)
     {
         /** @var $asyncCache Aoe_AsyncCache_Model_Asynccache */
         $asyncCache = Mage::getModel('aoeasynccache/asynccache');
-        $asyncCache->setTstamp(time())
-            ->setMode($mode)
+        $asyncCache->setMode($mode)
             ->setTags($tags)
-            ->setStatus(Aoe_AsyncCache_Model_Asynccache::STATUS_PENDING)
             ->save();
+    }
+
+    /**
+     * Add new job to the aoe_asynccache table
+     *
+     * @param string $mode
+     * @param array|string $tags
+     * @param bool $jobPerTag
+     * @throws Exception
+     */
+    public function addJob($mode, $tags, $jobPerTag = false)
+    {
+        if ($jobPerTag && is_array($tags)) {
+            foreach ($tags as $tag) {
+                $this->_addJob($mode, $tag);
+            }
+        } else {
+            $this->_addJob($mode, $tags);
+        }
     }
 }

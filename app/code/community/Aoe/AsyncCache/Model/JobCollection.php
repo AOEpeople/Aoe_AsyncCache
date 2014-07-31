@@ -3,31 +3,29 @@
 class Aoe_AsyncCache_Model_JobCollection extends Varien_Data_Collection
 {
     /**
-     * Check for duplicates before adding new job to the collection
+     * Generate item id
      *
-     * @param Aoe_AsyncCache_Model_Job|Varien_Object $job
-     * @return Aoe_AsyncCache_Model_JobCollection
+     * @param Varien_Object|Aoe_AsyncCache_Model_Job $item
+     * @return string
      */
-    public function addItem(Varien_Object $job)
+    protected function _getItemId(Varien_Object $item)
     {
-        // check if job with same mode and tags already exists
-        /** @var $existingJob Aoe_AsyncCache_Model_Job */
-        foreach ($this->getItems() as $existingJob) {
-            if ($existingJob->isEqualTo($job)) {
-                return $this;
-            }
-        }
-
-        return parent::addItem($job);
+        return md5($item->getMode() . $item->getTags());
     }
 
     /**
-     * Summary for Aoe_Scheduler output
+     * Check for duplicates before adding new job to the collection
      *
-     * @return string
+     * @param Varien_Object|Aoe_AsyncCache_Model_Job $item
+     * @return $this
      */
-    public function getSummary()
+    public function addItem(Varien_Object $item)
     {
-        return "";
+        $itemId = $this->_getItemId($item);
+        if (!isset($this->_items[$itemId])) {
+            $this->_items[$itemId] = $item;
+        }
+
+        return $this;
     }
 }

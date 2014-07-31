@@ -8,65 +8,63 @@
 class Aoe_AsyncCache_Adminhtml_AsyncController extends Mage_Adminhtml_Controller_Action
 {
     /**
-     * Process the queue
-     * This action is called from a button in the "Cache Management" module.
-     * Afterwards it redirects back to that module
+     * Process the queue.
+     * This action is called from a button on the "Cache Management" page.
+     * Afterwards redirect back to that page.
      */
     public function processAction()
     {
-        $processedJobs = Mage::getModel('aoeasynccache/cleaner')->processQueue();
-        if (is_array($processedJobs)) {
-            foreach ($processedJobs as $job) {
-                if (count($job['tags'])) {
-                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], implode(', ', $job['tags']), $job['duration']));
-                } else {
-                    $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
-                }
-            }
-        }
+        /** @var Aoe_AsyncCache_Model_Cleaner $cleaner */
+        $cleaner = Mage::getModel('aoeasynccache/cleaner');
+        $cleaner->processQueue();
+        $this->_getSession()->addSuccess(
+            Mage::helper('aoeasynccache')->__("All items in the asynchronous queue were successfully processed")
+        );
         $this->_redirect('*/cache/index');
     }
 
     /**
-     * Process the queue
-     * This action is called from a button in the "Cache Management" module.
-     * Afterwards it redirects back to that module
+     * Process the queue.
+     * This action is called from a button on the "Cache Management" page.
+     * Afterward redirect back to that page.
      */
     public function flushAllNowAction()
     {
-
         Mage::dispatchEvent('adminhtml_cache_flush_all');
         Mage::app()->getCacheInstance()->flush();
-        $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__("The cache storage has been flushed."));
+        /** @var Aoe_AsyncCache_Model_Cleaner $cleaner */
+        $cleaner = Mage::getModel('aoeasynccache/cleaner');
+        $cleaner->processQueue();
 
-        $processedJobs = Mage::getModel('aoeasynccache/cleaner')->processQueue();
-        if (is_array($processedJobs)) {
-            foreach ($processedJobs as $job) {
-                if (count($job['tags'])) {
-                    $this->_getSession()
-                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" using tags "%s" (Duration: %s sec)', $job['mode'], implode(', ', $job['tags']), $job['duration']));
-                } else {
-                    $this->_getSession()
-                        ->addSuccess(Mage::helper('aoeasynccache')->__('Cleared cache with mode "%s" (Duration: %s sec)', $job['mode'], $job['duration']));
-                }
-            }
-        }
+        $this->_getSession()->addSuccess(
+            Mage::helper('aoeasynccache')->__("Cache storage has been flushed successfully")
+        );
         $this->_redirect('*/cache/index');
     }
 
     /**
-     * Delete a async entry
-     * This action is called from a button in the "Cache Management" module.
-     * Afterwards it redirects back to that module
+     * Delete a async entry.
+     * Afterwards redirect back to the "Cache Management" page.
      */
     public function deleteAction()
     {
         $id = $this->getRequest()->getParam('id');
-        $async = Mage::getModel('aoeasynccache/asynccache')->load($id);
-        $async->setStatus('deleted');
-        $async->setProcessed(time());
-        $async->save();
-        $this->_getSession()->addSuccess(Mage::helper('aoeasynccache')->__('Deleted item "%s"', $id));
+
+        /** @var Aoe_AsyncCache_Model_Asynccache $asyncCacheModel */
+        $asyncCacheModel = Mage::getModel('aoeasynccache/asynccache');
+        $asyncCacheModel->load((int)$id);
+        if ($asyncCacheModel->getId()) {
+            $asyncCacheModel->delete();
+            $this->_getSession()->addSuccess(
+                Mage::helper('aoeasynccache')->__('Deleted item with mode "%s" and tags "%s"',
+                    $asyncCacheModel->getMode(), implode(',', $asyncCacheModel->getTags())
+                )
+            );
+        } else {
+            $this->_getSession()->addError(
+                Mage::helper('aoeasynccache')->__('Item with id "%d" not found in the asynccache table', $id)
+            );
+        }
         $this->_redirect('*/cache/index');
     }
 }

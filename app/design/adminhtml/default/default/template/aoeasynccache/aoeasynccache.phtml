@@ -1,6 +1,5 @@
 <?php
 /** @var $this Aoe_AsyncCache_Block_Adminhtml_AsyncControl */
-/** @var $_asyncCollection Aoe_AsyncCache_Model_Resource_Asynccache_Collection */
 $_asyncCollection = $this->getAsyncCollection();
 ?>
 <br/>
@@ -34,7 +33,7 @@ $_asyncCollection = $this->getAsyncCollection();
             </thead>
             <tbody>
             <?php $i = 0;?>
-            <?php foreach ($_asyncCollection->extractJobs() as $job): ?>
+            <?php foreach ($this->getExtractedJobs() as $job): ?>
                 <tr <?php echo ($i++ % 2) ? '' : 'class="even"'; ?>>
                     <td><?php echo $job['mode']; ?></td>
                     <td class="a-left last"><?php echo implode('<br />', $job['tags']); ?></td>
@@ -59,9 +58,9 @@ $_asyncCollection = $this->getAsyncCollection();
             <?php $i = 0;?>
             <?php foreach ($_asyncCollection as $async): /** @var $async Aoe_AsyncCache_Model_Asynccache */ ?>
                 <tr <?php echo ($i++ % 2) ? '' : 'class="even"'; ?>>
-                    <td><?php echo date('H:i:s', Mage::getModel('core/date')->timestamp($async->getTstamp())); ?></td>
+                    <td><?php echo date('H:i:s', strtotime($async->getTstamp())); ?></td>
                     <td><?php echo $async->getMode(); ?></td>
-                    <td class="a-left"><?php echo $async->getTags(); ?></td>
+                    <td class="a-left"><?php echo implode(',', $async->getTags()); ?></td>
                     <td class="a-left last"><a href="<?php echo $this->getUrl('*/async/delete', array('id' => $async->getId())); ?>"><?php echo Mage::helper('aoeasynccache')->__('Delete') ?></a></td>
                 </tr>
             <?php endforeach; ?>

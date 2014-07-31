@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
-
     <modules>
         <Aoe_AsyncCache>
             <active>true</active>
             <codePool>community</codePool>
-            <version>1.0.0</version>
+            <version>2.0.0</version>
         </Aoe_AsyncCache>
     </modules>
 
@@ -30,7 +29,7 @@
             <aoeasynccache_resource>
                 <class>Aoe_AsyncCache_Model_Resource</class>
                 <entities>
-                    <asynccache><table>asynccache</table></asynccache>
+                    <asynccache><table>aoe_asynccache</table></asynccache>
                 </entities>
             </aoeasynccache_resource>
         </models>

@@ -7,10 +7,19 @@
  */
 class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
 {
+    /**@+
+     * Purge message patterns
+     *
+     * @var string
+     */
+    const PROCESSED_MESSAGE_PATTERN     = '[ASYNCCACHE] MODE: %s, DURATION: %s sec, TAGS: %s';
+    const NOT_PROCESSED_MESSAGE_PATTERN = "[ASYNCCACHE] Couldn't process job: MODE: %s, TAGS: %s";
+    /**@-*/
+
     /**
      * Supported job modes
      *
-     * @var array
+     * @var string[]
      */
     protected $_supportedJobModes = array(
         Zend_Cache::CLEANING_MODE_ALL,
@@ -22,19 +31,20 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
 
     /**
      * Process the queue
-     *
-     * @return array|null
      */
     public function processQueue()
     {
-        $summary = array();
+        /** @var Aoe_AsyncCache_Helper_Data $helper */
+        $helper = Mage::helper('aoeasynccache');
 
-        $collection = $this->getUnprocessedEntriesCollection();
-        if (count($collection) > 0) {
-            $jobCollection = $collection->extractJobs();
+        /** @var $collection Aoe_AsyncCache_Model_Resource_Asynccache_Collection */
+        $collection = Mage::getModel('aoeasynccache/asynccache')->getCollection();
+        $collection->fetchItemsFromQueue($helper->getSelectLimit());
+        if ($collection->count() > 0) {
+            $jobCollection = $this->extractJobs($collection->getItems());
             /** @var $jobCollection Aoe_AsyncCache_Model_JobCollection */
 
-            // give other modules (e.g. Aoe_VarnishAsyncCache) to process jobs instead
+            // give other modules (e.g. Aoe_Static) to process jobs instead
             Mage::dispatchEvent('aoeasynccache_processqueue_preprocessjobcollection',
                 array('jobCollection' => $jobCollection)
             );
@@ -42,74 +52,89 @@ class Aoe_AsyncCache_Model_Cleaner extends Mage_Core_Model_Abstract
             /** @var $job Aoe_AsyncCache_Model_Job */
             foreach ($jobCollection as $job) {
                 if (!$job->getIsProcessed()) {
-                    $mode = $job->getMode();
-                    if (in_array($mode, $this->_supportedJobModes)) {
+                    if (in_array($job->getMode(), $this->_supportedJobModes)) {
                         $startTime = time();
                         Mage::app()->getCache()->clean($job->getMode(), $job->getTags(), true);
                         $job->setDuration(time() - $startTime);
                         $job->setIsProcessed(true);
 
-                        Mage::log(sprintf('[ASYNCCACHE] MODE: %s, DURATION: %s sec, TAGS: %s',
-                            $job->getMode(),
-                            $job->getDuration(),
-                            implode(', ', $job->getTags())
-                        ));
+                        Mage::log(
+                            sprintf(self::PROCESSED_MESSAGE_PATTERN, $job->getMode(), $job->getDuration(),
+                                implode(', ', $job->getTags())
+                            )
+                        );
                     }
                 }
             }
 
-            // give other modules (e.g. Aoe_VarnishAsyncCache) to process jobs instead
+            // give other modules (e.g. Aoe_Static) to process jobs instead
             Mage::dispatchEvent('aoeasynccache_processqueue_postprocessjobcollection',
                 array('jobCollection' => $jobCollection)
             );
 
-            // check what jobs weren't processed by any code
+            // check what jobs weren't processed by code in any observer
             /** @var $job Aoe_AsyncCache_Model_Job */
             foreach ($jobCollection as $job) {
                 if (!$job->getIsProcessed()) {
-                    Mage::log(sprintf("[ASYNCCACHE] Couldn't process job: MODE: %s, TAGS: %s",
-                        $job->getMode(),
-                        implode(', ', $job->getTags())
-                    ), Zend_Log::ERR);
+                    Mage::log(
+                        sprintf(self::NOT_PROCESSED_MESSAGE_PATTERN, $job->getMode(), implode(', ', $job->getTags())),
+                        Zend_Log::ERR
+                    );
                 }
             }
-
-            // delete all affected asynccache database rows
-            /** @var $asynccache Aoe_AsyncCache_Model_Asynccache */
-            foreach ($collection as $asynccache) {
-                $asynccache->delete();
-            }
-
-            $summary = $jobCollection->getSummary();
         }
 
         // disabling asynccache (clear cache requests will be processed right away)
         // for all following requests in this script call
         Mage::register('disableasynccache', true, true);
-
-        return $summary;
     }
 
     /**
-     * Get all unprocessed entries
+     * Extract jobs
+     * Combines job to reduce cache operations
      *
-     * @return Aoe_AsyncCache_Model_Resource_Asynccache_Collection
+     * @param array|Aoe_AsyncCache_Model_Asynccache[] $items
+     * @return Aoe_AsyncCache_Model_JobCollection
      */
-    public function getUnprocessedEntriesCollection()
+    public function extractJobs(array $items)
     {
-        /** @var $collection Aoe_AsyncCache_Model_Resource_Asynccache_Collection */
-        $collection = Mage::getModel('aoeasynccache/asynccache')->getCollection();
-        $collection->addFieldToFilter('tstamp', array('lteq' => time()))
-            ->addFieldToFilter('status', Aoe_AsyncCache_Model_Asynccache::STATUS_PENDING)
-            ->addOrder('tstamp', Varien_Data_Collection::SORT_ORDER_ASC);
+        /** @var $jobCollection Aoe_AsyncCache_Model_JobCollection */
+        $jobCollection = Mage::getModel('aoeasynccache/jobCollection');
 
-        // if configured, set limit to query
-        $selectLimit = (int)Mage::getStoreConfig('system/aoeasynccache/select_limit');
-        if ($selectLimit != 0) {
-            $collection->setCurPage(1)
-                ->setPageSize($selectLimit);
+        $matchingAnyTag = array();
+        foreach ($items as $item) {
+            $mode = $item->getMode();
+            $tags = $item->getTags();
+
+            /** @var $job Aoe_AsyncCache_Model_Job */
+            $job = Mage::getModel('aoeasynccache/job');
+            $job->setParameters($mode, $tags);
+
+            if ($mode == Zend_Cache::CLEANING_MODE_ALL) {
+                $jobCollection->addItem($job);
+                return $jobCollection; // no further processing needed as we're going to clean everything anyway
+            } elseif ($mode == Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG) {
+                // collect tags and add to job collection later
+                $matchingAnyTag = array_merge($matchingAnyTag, $tags);
+            } elseif ($mode == Zend_Cache::CLEANING_MODE_MATCHING_TAG && count($tags) <= 1) {
+                // collect tags and add to job collection later
+                $matchingAnyTag = array_merge($matchingAnyTag, $tags);
+            } else {
+                // everything else will be added to the job collection
+                $jobCollection->addItem($job);
+            }
         }
 
-        return $collection;
+        // processed collected tags
+        $matchingAnyTag = array_unique($matchingAnyTag);
+        if (count($matchingAnyTag) > 0) {
+            /** @var $job Aoe_AsyncCache_Model_Job */
+            $job = Mage::getModel('aoeasynccache/job');
+            $job->setParameters(Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG, $matchingAnyTag);
+
+            $jobCollection->addItem($job);
+        }
+
+        return $jobCollection;
     }
 }

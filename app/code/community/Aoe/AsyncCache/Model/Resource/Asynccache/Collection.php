@@ -4,6 +4,8 @@
  * Async collection
  *
  * @author Fabrizio Branca
+ *
+ * @method Aoe_AsyncCache_Model_Resource_Asynccache getResource() getResource()
  */
 class Aoe_AsyncCache_Model_Resource_Asynccache_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
@@ -18,71 +20,44 @@ class Aoe_AsyncCache_Model_Resource_Asynccache_Collection extends Mage_Core_Mode
     }
 
     /**
-     * Extract jobs
-     * Combines job to reduce cache operations
+     * Add unprocessed entries filter
      *
-     * @return Aoe_AsyncCache_Model_JobCollection
+     * @param int $limit
+     * @return $this
      */
-    public function extractJobs()
+    public function orderByTstampAsc($limit = 0)
     {
-        /** @var $jobCollection Aoe_AsyncCache_Model_JobCollection */
-        $jobCollection = Mage::getModel('aoeasynccache/jobCollection');
+        $this->addOrder('tstamp', Varien_Data_Collection::SORT_ORDER_ASC);
 
-        $matchingAnyTag = array();
-        /** @var $asynccache Aoe_AsyncCache_Model_Asynccache */
-        foreach ($this as $asynccache) {
-            $mode = $asynccache->getMode();
-            $tags = $this->getTagArray($asynccache->getTags());
-
-            /** @var $job Aoe_AsyncCache_Model_Job */
-            $job = Mage::getModel('aoeasynccache/job');
-            $job->setParameters($mode, $tags);
-            $job->setAsynccacheId($asynccache->getId());
-
-            if ($mode == Zend_Cache::CLEANING_MODE_ALL) {
-                $jobCollection->addItem($job);
-                return $jobCollection; // no further processing needed as we're going to clean everything anyway
-            } elseif ($mode == Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG) {
-                // collect tags and add to job collection later
-                $matchingAnyTag = array_merge($matchingAnyTag, $tags);
-            } elseif (($mode == Zend_Cache::CLEANING_MODE_MATCHING_TAG) && (count($tags) <= 1)) {
-                // collect tags and add to job collection later
-                $matchingAnyTag = array_merge($matchingAnyTag, $tags);
-            } else {
-                // everything else will be added to the job collection
-                $jobCollection->addItem($job);
-            }
+        if ($limit) {
+            $this->setCurPage(1)
+                ->setPageSize((int)$limit);
         }
 
-        // processed collected tags
-        $matchingAnyTag = array_unique($matchingAnyTag);
-        if (count($matchingAnyTag) > 0) {
-            /** @var $job Aoe_AsyncCache_Model_Job */
-            $job = Mage::getModel('aoeasynccache/job');
-            $job->setParameters(Zend_Cache::CLEANING_MODE_MATCHING_ANY_TAG, $matchingAnyTag);
-
-            $jobCollection->addItem($job);
-        }
-
-        return $jobCollection;
+        return $this;
     }
 
     /**
-     * Get tag array from string
+     * Fetch items from aoe_asynccache table (fetched items will be deleted from table)
      *
-     * @param string $tagString
+     * @param int $limit if 0 - no limit
      * @return array
      */
-    protected function getTagArray($tagString)
+    public function fetchItemsFromQueue($limit = 0)
     {
-        $tags = array();
-        foreach (explode(',', $tagString) as $tag) {
-            $tag = trim($tag);
-            if (!empty($tag) && !in_array($tag, $tags)) {
-                $tags[] = $tag;
+        $this->resetData();
+        $rows = $this->getResource()->fetchItemsFromQueue($limit);
+
+        foreach ($rows as $row) {
+            $item = $this->getNewEmptyItem();
+            if ($this->getIdFieldName()) {
+                $item->setIdFieldName($this->getIdFieldName());
             }
+            $item->addData($row);
+            $this->addItem($item);
         }
-        sort($tags);
-        return $tags;
+
+        $this->_setIsLoaded();
+        return $this;
     }
 }
