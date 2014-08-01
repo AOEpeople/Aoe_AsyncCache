@@ -39,7 +39,7 @@ $installer->getConnection()->createTable($table);
 // migrate rows from old table to the new one
 
 $installer->getConnection()->query(<<<SQL
-    INSERT INTO {$installer->getTable('aoeasynccache/asynccache')} (`mode`, `tags`)
+    INSERT IGNORE INTO {$installer->getTable('aoeasynccache/asynccache')} (`mode`, `tags`)
     SELECT `mode`, `tags` FROM {$installer->getTable('asynccache')}
 SQL
 );
