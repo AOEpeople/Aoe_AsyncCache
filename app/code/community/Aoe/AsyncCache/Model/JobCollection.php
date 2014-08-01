@@ -10,7 +10,7 @@ class Aoe_AsyncCache_Model_JobCollection extends Varien_Data_Collection
      */
     protected function _getItemId(Varien_Object $item)
     {
-        return md5($item->getMode() . $item->getTags());
+        return md5($item->getMode() . implode('', $item->getTags()));
     }
 
     /**
