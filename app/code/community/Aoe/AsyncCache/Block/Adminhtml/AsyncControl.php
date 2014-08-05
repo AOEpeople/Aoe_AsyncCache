@@ -12,7 +12,7 @@ class Aoe_AsyncCache_Block_Adminhtml_AsyncControl extends Mage_Adminhtml_Block_T
         /** @var Aoe_AsyncCache_Helper_Data $helper */
         $helper = Mage::helper('aoeasynccache');
 
-        /** @var $collection Aoe_AsyncCache_Model_Resource_Asynccache_Collection */
+        /** @var Aoe_AsyncCache_Model_Resource_Asynccache_Collection $collection */
         $collection = Mage::getModel('aoeasynccache/asynccache')->getCollection();
         $collection->orderByTstampAsc($helper->getSelectLimit());
 

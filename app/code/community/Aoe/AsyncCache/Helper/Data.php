@@ -27,7 +27,7 @@ class Aoe_AsyncCache_Helper_Data extends Mage_Core_Helper_Abstract
     public function getSelectLimit()
     {
         if ($this->_selectLimit === null) {
-            $this->_selectLimit = (int)Mage::getStoreConfig('system/aoeasynccache/select_limit');
+            $this->_selectLimit = (int)Mage::getStoreConfig(self::XML_PATH_SELECT_LIMIT);
         }
 
         return $this->_selectLimit;

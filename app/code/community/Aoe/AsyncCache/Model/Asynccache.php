@@ -35,14 +35,9 @@ class Aoe_AsyncCache_Model_Asynccache extends Mage_Core_Model_Abstract
      */
     protected function _prepareTagArray(array $unfilteredTags)
     {
-        $tags = array();
-        foreach ($unfilteredTags as $tag) {
-            $tag = trim($tag);
-            if (!empty($tag) && !in_array($tag, $tags)) {
-                $tags[] = $tag;
-            }
-        }
+        $tags = array_unique(array_filter(array_map('trim', $unfilteredTags)));
         sort($tags);
+
         return $tags;
     }
 
