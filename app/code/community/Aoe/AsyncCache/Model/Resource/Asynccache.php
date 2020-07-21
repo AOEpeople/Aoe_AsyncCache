@@ -17,16 +17,13 @@ class Aoe_AsyncCache_Model_Resource_Asynccache extends Mage_Core_Model_Mysql4_Ab
     }
 
     /**
-     * Overwritten save method, updates data on duplicate key
+     * Overwritten save method, ignore on duplicate key
      *
      * @param Mage_Core_Model_Abstract $object
      * @return Aoe_AsyncCache_Model_Resource_Asynccache
      */
     public function save(Mage_Core_Model_Abstract $object)
     {
-        // define on-duplicate-key-update fields
-        $this->_fieldsForUpdate = array('tstamp');
-
         if ($object->isDeleted()) {
             return $this->delete($object);
         }
@@ -34,12 +31,9 @@ class Aoe_AsyncCache_Model_Resource_Asynccache extends Mage_Core_Model_Mysql4_Ab
         $this->_serializeFields($object);
         $this->_beforeSave($object);
 
-        $this->_getWriteAdapter()->insertOnDuplicate(
-            $this->getMainTable(),
-            $this->_prepareDataForSave($object),
-            $this->_fieldsForUpdate
+        $this->_getWriteAdapter()->insertIgnore($this->getMainTable(),
+            $this->_prepareDataForSave($object)
         );
-
         $this->unserializeFields($object);
         $this->_afterSave($object);
 
